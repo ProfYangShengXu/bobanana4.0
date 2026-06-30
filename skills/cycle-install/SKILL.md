@@ -16,26 +16,34 @@ runAs: inline
 - 项目 skill：`.reasonix/skills/cyclic-workflow/SKILL.md`
 - 项目命令：`.reasonix/commands/cycle.md`
 
-记录缺失的项目。**如果全局 skill 也不存在**（四个位置全部缺失）——说明当前环境就没有 cyclic-workflow，无法安装。告诉用户先去 reasonix 源码项目编译运行一次 `/cycle` 或手动运行 `scripts/cycle-install.bat`。
+记录缺失的项目。
 
-**如果全局 skill 存在但项目级缺失**（最常见场景——桌面端用了新 workspace）：不需要停，继续步骤 2，只安装缺少的项目级文件。
+**四种情况处理：**
+
+| 全局 skill | 全局命令 | 项目 skill | 项目命令 | 处理 |
+|-----------|---------|-----------|---------|------|
+| ❌ 缺 | ❌ 缺 | ❌ 缺 | ❌ 缺 | **无法安装**——告诉用户去 GitHub 下载并运行 `install.bat` |
+| ✅ 有 | ✅ 有 | ❌ 缺 | ❌ 缺 | 最常见——换项目了，步骤 1 记录缺项目级文件，继续步骤 2 |
+| ✅ 有 | ❌ 缺 | ✅ 有 | ❌ 缺 | 继续步骤 2，装缺的 |
+| ✅ 有 | ✅ 有 | ✅ 有 | ✅ 有 | 全部已装，告诉用户"已安装"结束 |
+
+全局 skill 和全局命令应该同时存在或同时缺失（因为 `install.bat` 一起装），但上面的组合覆盖了所有可能。
 
 ## 步骤 2：定位源文件
 
-用 `read_file` 读取以下路径（按优先级），确保读取成功后再继续：
-1. `~/.reasonix/skills/cyclic-workflow/SKILL.md`（全局）
-2. `.reasonix/skills/cyclic-workflow/SKILL.md`（项目级）
-3. 如果前两者都不存在——说明当前环境本身就还没装 cyclic-workflow，无法安装。告诉用户先去 reasonix 源码项目编译并运行一次 `/cycle`，让 skill 生成到全局目录，或者手动运行 `scripts/cycle-install.bat`。
+从已有位置读取 `cyclic-workflow` SKILL.md 内容作为源：
+
+1. 如果全局 skill 存在：`read_file ~/.reasonix/skills/cyclic-workflow/SKILL.md`
+2. 否则如果项目 skill 存在：`read_file .reasonix/skills/cyclic-workflow/SKILL.md`
+3. 如果两者都不存在——与步骤 1 矛盾（应该已返回"无法安装"），作为安全兜底，报错结束。
+
+`cycle.md` 命令的内容不需要读源文件——用下方内联模板写入即可。
 
 ## 步骤 3：写入缺失的目标位置
 
-按步骤 1 记录的目标缺失列表，逐项安装。已存在的跳过。
+按步骤 1 记录的缺失列表，逐项安装。已存在的跳过。
 
-### 全局 skill（~/.reasonix/skills/cyclic-workflow/SKILL.md）
-如果缺失：用步骤 2 读到内容，`write_file` 写入目标。
-
-### 全局命令（~/.reasonix/commands/cycle.md）
-如果缺失，用 `write_file` 创建：
+### 全局命令 `~/.reasonix/commands/cycle.md`（如果缺失）
 ```markdown
 ---
 description: 启动三阶段循环工作流（设计→编码→验证），SSE 流式输出
@@ -47,11 +55,14 @@ argument-hint: [goal]
 所有工具调用通过事件流实时推送到前端。完成后展示产物路径。
 ```
 
-### 项目 skill（.reasonix/skills/cyclic-workflow/SKILL.md）
-如果缺失：用步骤 2 读到内容，`write_file` 写入目标。
+### 全局 skill `~/.reasonix/skills/cyclic-workflow/SKILL.md`（如果缺失）
+用步骤 2 读到内容，`write_file` 写入目标。
 
-### 项目命令（.reasonix/commands/cycle.md）
-如果缺失：写入与全局命令相同的内容。
+### 项目 skill `.reasonix/skills/cyclic-workflow/SKILL.md`（如果缺失）
+用步骤 2 读到内容，`write_file` 写入目标。
+
+### 项目命令 `.reasonix/commands/cycle.md`（如果缺失）
+写入与全局命令相同的内联内容。
 
 ## 步骤 4：检查 reasonix.toml
 
@@ -64,7 +75,7 @@ name    = "cycle-bridge"
 command = "bin/cycle-bridge.exe"
 ```
 
-注意：`bin/cycle-bridge.exe` 需要先编译（`go build -o bin/cycle-bridge.exe ./cmd/cycle-bridge/`）或从已安装的 reasonix 项目拷贝。
+`bin/cycle-bridge.exe` 可以从 bobanana4.0 的 `bin/` 目录复制。
 
 ## 完成提示
 
