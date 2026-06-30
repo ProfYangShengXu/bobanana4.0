@@ -40,9 +40,43 @@ runAs: inline
 
 ---
 
-## 铁律
+## 预算对齐（防止做到一半弹出）
 
-### 铁律 1：不准漂移（target 锁定）
+**`iterative-loop` 在单次 agent turn 内运行，有 tool-call 次数上限（默认 25，用 `reasonix cycle` 时 50）。** 如果循环总步数超过上限，agent 会弹出，循环中断。
+
+### 约束
+
+```
+一次迭代 ≈ 4 步（读文件 + 改代码 + 验证 + grep 检查）
+max_iterations = 5 → 约 20 步 → 刚好在默认 25 步内 ✅
+max_iterations = 8 → 约 32 步 → 超出默认 25 步 ❌
+```
+
+### 对齐规则
+
+1. **估算步数**：进入循环前，先估算 `max_iterations × 每轮步数` 是否超出当前 session 的预算。如果超了，直接告诉用户："这个循环需要约 N 步，当前预算可能不够，建议用 `reasonix cycle --max-steps 目标` 来跑"。
+
+2. **每轮用 `task` 子 agent 执行**：把每次迭代的"评估→选一项→执行→验证"整个包成一个 `task` 调用。子 agent 有自己的预算（父 agent 的一半），互不干扰，父 agent 只负责循环控制和结果汇总。这样主循环本身只消耗 `max_iterations × 1` 步（只调 task，其他都不做），预算翻倍。
+
+3. **如果不用 task**：直接在主 agent 中跑循环的话，每轮固定消耗 4-6 步，确保 `max_iterations × 6 < 当前 max_steps`。否则用户说"做了 8 轮"但实际第 5 轮就弹出了。
+
+4. **通过 `/cycle` 运行时的对齐**：`reasonix cycle` 默认 `--max-steps 50`，`task` 子 agent 拿到 25 步。每轮迭代用 task 执行的话，主循环 5 轮只消耗 5 步（仅 task 调用），剩余 45 步给子 agent 用——足够。
+
+### 推荐方式
+
+```
+# 1. task 模式（推荐）：每轮用 task 子 agent，适合大任务
+/skill iterative-loop target="..." max_iterations=8
+
+# 2. 直接模式：主 agent 直接迭代，适合小任务
+#    需要确保 max_iterations × 6 < max_steps
+/skill iterative-loop target="..." max_iterations=3
+
+# 3. 通过 cycle 跑（自动 --max-steps 50）
+reasonix cycle "用 iterative-loop 把 server.go 覆盖到 90%，最多 5 轮"
+```
+
+### 铁律
 
 **进入循环后 target 就是铁律，不准自己改。**
 
