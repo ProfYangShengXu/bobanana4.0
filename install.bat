@@ -22,6 +22,7 @@ if not exist "%USER_DIR%\skills\cyclic-workflow" mkdir "%USER_DIR%\skills\cyclic
 copy "%SOURCE_DIR%skills\cyclic-workflow\SKILL.md" "%USER_DIR%\skills\cyclic-workflow\SKILL.md" >nul
 echo   ✅ ~\.reasonix\skills\cyclic-workflow\SKILL.md
 
+if not exist "%USER_DIR%\skills\cycle-install" mkdir "%USER_DIR%\skills\cycle-install"
 copy "%SOURCE_DIR%skills\cycle-install\SKILL.md" "%USER_DIR%\skills\cycle-install\SKILL.md" >nul
 echo   ✅ ~\.reasonix\skills\cycle-install\SKILL.md
 
@@ -37,6 +38,9 @@ if not exist ".reasonix" mkdir ".reasonix"
 if not exist ".reasonix\skills\cyclic-workflow" mkdir ".reasonix\skills\cyclic-workflow"
 copy "%SOURCE_DIR%skills\cyclic-workflow\SKILL.md" ".reasonix\skills\cyclic-workflow\SKILL.md" >nul
 echo   ✅ .reasonix\skills\cyclic-workflow\SKILL.md
+if not exist ".reasonix\skills\cycle-install" mkdir ".reasonix\skills\cycle-install"
+copy "%SOURCE_DIR%skills\cycle-install\SKILL.md" ".reasonix\skills\cycle-install\SKILL.md" >nul
+echo   ✅ .reasonix\skills\cycle-install\SKILL.md
 
 if not exist ".reasonix\commands" mkdir ".reasonix\commands"
 copy "%SOURCE_DIR%commands\cycle.md" ".reasonix\commands\cycle.md" >nul
