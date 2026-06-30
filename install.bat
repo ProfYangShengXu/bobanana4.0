@@ -25,6 +25,9 @@ echo   ✅ ~\.reasonix\skills\cyclic-workflow\SKILL.md
 if not exist "%USER_DIR%\skills\cycle-install" mkdir "%USER_DIR%\skills\cycle-install"
 copy "%SOURCE_DIR%skills\cycle-install\SKILL.md" "%USER_DIR%\skills\cycle-install\SKILL.md" >nul
 echo   ✅ ~\.reasonix\skills\cycle-install\SKILL.md
+if not exist "%USER_DIR%\skills\iterative-loop" mkdir "%USER_DIR%\skills\iterative-loop"
+copy "%SOURCE_DIR%skills\iterative-loop\SKILL.md" "%USER_DIR%\skills\iterative-loop\SKILL.md" >nul
+echo   ✅ ~\.reasonix\skills\iterative-loop\SKILL.md
 
 echo [2/3] 安装全局命令...
 if not exist "%USER_DIR%\commands" mkdir "%USER_DIR%\commands"
@@ -41,6 +44,9 @@ echo   ✅ .reasonix\skills\cyclic-workflow\SKILL.md
 if not exist ".reasonix\skills\cycle-install" mkdir ".reasonix\skills\cycle-install"
 copy "%SOURCE_DIR%skills\cycle-install\SKILL.md" ".reasonix\skills\cycle-install\SKILL.md" >nul
 echo   ✅ .reasonix\skills\cycle-install\SKILL.md
+if not exist ".reasonix\skills\iterative-loop" mkdir ".reasonix\skills\iterative-loop"
+copy "%SOURCE_DIR%skills\iterative-loop\SKILL.md" ".reasonix\skills\iterative-loop\SKILL.md" >nul
+echo   ✅ .reasonix\skills\iterative-loop\SKILL.md
 
 if not exist ".reasonix\commands" mkdir ".reasonix\commands"
 copy "%SOURCE_DIR%commands\cycle.md" ".reasonix\commands\cycle.md" >nul
@@ -77,12 +83,15 @@ echo ====================================
 echo 🍌 安装完成！
 echo.
 echo 现在在任何 Reasonix 前端中输入：
-echo   /cycle 你的目标
+echo   /cycle 你的目标              ← 三阶段大循环
+echo   /skill iterative-loop ...    ← 🆕 小循环逼近
 echo.
 echo 终端中运行：
 echo   reasonix cycle "你的目标"
 echo.
-echo 以后换项目也无需重复安装——直接 /skill cycle-install
+echo 【更新】以后当 bobanana4.0 发布新版本时：
+echo   1. git pull 拉取最新仓库
+echo   2. 重新运行 install.bat（覆盖更新已有文件，新增 skill 自动补上）
 echo.
 endlocal
 pause
