@@ -1,84 +1,61 @@
 ---
 name: cycle-install
-description: 将 cyclic-workflow 插件安装到当前项目的 .reasonix/ 和全局 ~/.reasonix/ 中。
+description: 安装/更新 banana4.0 全部技能到当前项目（cyclic-workflow + iterative-loop + cycle 命令）。
 runAs: inline
 ---
 
-# cycle-install — 安装循环工作流插件
+# cycle-install — 安装/更新 banana4.0 插件
 
-你被要求将 cyclic-workflow 插件安装到当前项目中。
+将 banana4.0 全部技能安装或更新到当前项目。如果全局已安装，则从全局复制最新版本到项目级。
 
-## 步骤 1：检查哪些目标缺失
+## 步骤 0：检查全局是否已安装
 
-检查以下目标位置：
-- 全局 skill：`~/.reasonix/skills/cyclic-workflow/SKILL.md`
-- 全局命令：`~/.reasonix/commands/cycle.md`
-- 项目 skill：`.reasonix/skills/cyclic-workflow/SKILL.md`
-- 项目命令：`.reasonix/commands/cycle.md`
+检查以下全局路径是否存在：
+- `~/.reasonix/skills/cyclic-workflow/SKILL.md`
+- `~/.reasonix/skills/cycle-install/SKILL.md`（就是正在运行的它自己）
+- `~/.reasonix/skills/iterative-loop/SKILL.md`
+- `~/.reasonix/commands/cycle.md`
 
-记录缺失的项目。
+需要 **至少要有一个 skill 存在**（`cyclic-workflow` 或 `iterative-loop`），否则说明全局根本没有装过 banana4.0。此时报错，让用户去 GitHub 下载后运行 `install.bat`。
 
-**四种情况处理：**
+## 步骤 1：读取源文件
 
-| 全局 skill | 全局命令 | 项目 skill | 项目命令 | 处理 |
-|-----------|---------|-----------|---------|------|
-| ❌ 缺 | ❌ 缺 | ❌ 缺 | ❌ 缺 | **无法安装**——告诉用户去 GitHub 下载并运行 `install.bat` |
-| ✅ 有 | ✅ 有 | ❌ 缺 | ❌ 缺 | 最常见——换项目了，步骤 1 记录缺项目级文件，继续步骤 2 |
-| ✅ 有 | ❌ 缺 | ✅ 有 | ❌ 缺 | 继续步骤 2，装缺的 |
-| ✅ 有 | ✅ 有 | ✅ 有 | ✅ 有 | 全部已装，告诉用户"已安装"结束 |
+从全局读取以下文件内容（`read_file`），全部准备就绪再进入写入阶段：
 
-全局 skill 和全局命令应该同时存在或同时缺失（因为 `install.bat` 一起装），但上面的组合覆盖了所有可能。
+| 源路径 | 读给谁用 |
+|--------|---------|
+| `~/.reasonix/skills/cyclic-workflow/SKILL.md` | 安装/更新 cyclic-workflow |
+| `~/.reasonix/skills/cycle-install/SKILL.md` | **自更新**——更新 cycle-install 自己 |
+| `~/.reasonix/skills/iterative-loop/SKILL.md` | 安装/更新 iterative-loop |
+| `~/.reasonix/commands/cycle.md` | 安装/更新 cycle 命令 |
 
-## 步骤 2：定位源文件
+如果某个文件在全局不存在（例如老版本没有 `iterative-loop`），跳过它并记录"全局无此文件，跳过"。
 
-从已有位置读取 `cyclic-workflow` SKILL.md 内容作为源：
+## 步骤 2：写入/更新到项目级
 
-1. 如果全局 skill 存在：`read_file ~/.reasonix/skills/cyclic-workflow/SKILL.md`
-2. 否则如果项目 skill 存在：`read_file .reasonix/skills/cyclic-workflow/SKILL.md`
-3. 如果两者都不存在——与步骤 1 矛盾（应该已返回"无法安装"），作为安全兜底，报错结束。
+对上述每个源文件，**始终写入**（覆盖，不跳过）。不只是"存在就跳过"——因为用户调用 `cycle-install` 的目的往往是更新到最新版。
 
-`cycle.md` 命令的内容不需要读源文件——用下方内联模板写入即可。
+| 目标路径 | 用哪个源 |
+|---------|---------|
+| `.reasonix/skills/cyclic-workflow/SKILL.md` | 全局 cyclic-workflow 内容 |
+| `.reasonix/skills/cycle-install/SKILL.md` | 全局 cycle-install 内容（自更新） |
+| `.reasonix/skills/iterative-loop/SKILL.md` | 全局 iterative-loop 内容 |
+| `.reasonix/commands/cycle.md` | 全局 cycle.md 内容（如果全局没有则用内联模板） |
 
-## 步骤 3：写入缺失的目标位置
+**注意 `cycle-install` 的自更新**：你正在运行这个 skill，写入的新版本会在下次调用时生效。这没问题——写入后告知用户"cycle-install 已自更新，下次调用生效"。
 
-按步骤 1 记录的缺失列表，逐项安装。已存在的跳过。
+## 步骤 3：检查 reasonix.toml
 
-### 全局命令 `~/.reasonix/commands/cycle.md`（如果缺失）
-```markdown
----
-description: 启动三阶段循环工作流（设计→编码→验证），SSE 流式输出
-argument-hint: [goal]
----
-用户要求启动循环工作流。目标：$ARGUMENTS
-
-请调用 `run_skill({name: "cyclic-workflow", arguments: "Goal: $ARGUMENTS"})` 直接在当前会话中执行三阶段。
-所有工具调用通过事件流实时推送到前端。完成后展示产物路径。
-```
-
-### 全局 skill `~/.reasonix/skills/cyclic-workflow/SKILL.md`（如果缺失）
-用步骤 2 读到内容，`write_file` 写入目标。
-
-### 项目 skill `.reasonix/skills/cyclic-workflow/SKILL.md`（如果缺失）
-用步骤 2 读到内容，`write_file` 写入目标。
-
-### 项目命令 `.reasonix/commands/cycle.md`（如果缺失）
-写入与全局命令相同的内联内容。
-
-## 步骤 4：检查 reasonix.toml
-
-检查当前项目是否有 `reasonix.toml` 且包含 `[[plugins]]` 段中注册了 `cycle-bridge`。
-
-如果没有，告知用户需要在 `reasonix.toml` 中添加：
-```toml
-[[plugins]]
-name    = "cycle-bridge"
-command = "bin/cycle-bridge.exe"
-```
-
-`bin/cycle-bridge.exe` 可以从 bobanana4.0 的 `bin/` 目录复制。
+检查当前项目是否有 `reasonix.toml` 且包含 `[[plugins]]` 段中注册了 `cycle-bridge`。如果没有，告知用户添加。
 
 ## 完成提示
 
-告知用户实际安装/跳过了哪些位置，以及现在可以在所有 workspace 中使用：
-- TUI/桌面端：输入 `/cycle 你的目标`
-- 终端：`reasonix cycle "你的目标"`
+告知用户实际更新了哪些文件：
+```
+✅ cyclic-workflow  ✓
+✅ cycle-install    ✓（自更新）
+✅ iterative-loop   ✓（新装 或 更新）
+✅ /cycle 命令      ✓
+
+如果有任何文件显示"全局无此文件，跳过"，通知用户重新下载最新版 install.bat
+```
