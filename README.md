@@ -25,25 +25,35 @@ git clone https://github.com/ProfYangShengXu/bobanana4.0.git
 cd 你的项目
 
 # 3. 运行安装脚本
-../bobanana4.0/install.bat
+..\bobanana4.0\install.bat
 ```
 
-安装脚本会：
-- 把 `cyclic-workflow` skill 装到项目 `.reasonix/skills/` 下
-- 把 `/cycle` 命令装到项目 `.reasonix/commands/` 下
-- 检查 `reasonix.toml` 是否需要注册 `cycle-bridge` 插件
+安装脚本做三件事：
 
-装完后，当前项目就能用 `/cycle` 和 `reasonix cycle` 了。
+**① 装到全局 `~/.reasonix/`（所有项目通用）**
+- `~/.reasonix/skills/cyclic-workflow/SKILL.md`
+- `~/.reasonix/skills/cycle-install/SKILL.md`
+- `~/.reasonix/commands/cycle.md`
 
-### 方式 B：已有 banana4.0 的老用户
+**② 装到当前项目**
+- `.reasonix/skills/cyclic-workflow/SKILL.md`
+- `.reasonix/commands/cycle.md`
 
-如果你已经通过方式 A 装过一次，换到新项目时只需在 Reasonix 聊天框输入：
+**③ 检查 `reasonix.toml`** 插件配置
+
+> **装一次，换项目不用重装。** 因为 skill 和命令都在 `~/.reasonix/` 全局目录下，所有 workspace 都能看到。
+
+### 方式 B：换项目时（全局已有 skill）
+
+如果已经通过方式 A 装过（全局 `~/.reasonix/` 下有 `cycle-install` skill），换到新项目时直接在 Reasonix 聊天框输入：
 
 ```
 /skill cycle-install
 ```
 
-Agent 会检测到新项目缺文件，自动帮你补上。**第一次装不能用这个方式**——因为你还没有 `cycle-install` skill。
+Agent 会检测新项目缺了哪些文件，自动补上。
+
+> **第一次装不能用 `/skill cycle-install`**——因为你还没有全局 skill。必须先走一次方式 A。
 
 ---
 
