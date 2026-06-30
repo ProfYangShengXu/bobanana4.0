@@ -156,6 +156,23 @@ runAs: inline
 >
 > **违反后果**：如果我在主会话中直接 `write_file` 或 `edit_file` 实现了功能代码，而没有使用 `task` 子 agent，就等于跳过了督查环节——子 agent 产出抽查、PRD 一致性审阅、验证方案执行全部失效。
 
+### 铁律 3：不准有空壳代码
+
+> **子 agent 交给你的代码以及你审阅后签收的代码，必须是可以实际执行的完整实现。**
+>
+> 以下模式在签收前必须被识别并打回：
+>
+> | 模式 | 例子 | 处理 |
+> |------|------|------|
+> | 空函数体 | `function foo() {}`、`def bar(): pass` | 打回要求实现 |
+> | 桩/存根 | `throw new NotImplementedException()`、`// TODO` | 打回要求实现 |
+> | 空 return | `return null;`、`return "";`、`return nil` | 确认是否有意为之，否则打回 |
+> | 虚假实现 | 函数签名完整但逻辑只处理了 happy path，无错误处理 | 对照 PRD 检查是否满足验收条件 |
+> | 未调用的导出函数/组件 | Class/function 定义了但没有任何 import/call site | 要么删除，要么补调用方 |
+> | 未使用的 import/变量 | 编码完成后残留的 import 语句、死变量 | 在 complete_step 前清理 |
+>
+> **审阅子 agent 产出时，第一步就是 grep 搜索上述模式。** 发现任何一项，先在 issue 中记录，再决定打回重做还是自己修复。
+
 ### 执行流程
 
 1. **读取 PRD（必做）**：
@@ -264,6 +281,7 @@ runAs: inline
    | D | Typecheck | 项目 typecheck 命令 | 零 error |
    | E | 测试 | 项目测试命令 | 零 failure |
    | F | 构建 | 项目构建命令 | 零 error |
+   | G | 无死代码 | `grep -r "NotImplemented\|todo!()\|FIXME\|pass$\\|return nil$\\|return null$\\|return \"\"" --include="*.go" --include="*.ts" --include="*.py"` | 零命中（有意标记需在 known-gaps 中说明） |
 
    每项按验证报告格式记录——(a) 命令 (b) 退出码 (c) 输出摘要。
 
