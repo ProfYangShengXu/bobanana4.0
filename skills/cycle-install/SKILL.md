@@ -44,9 +44,60 @@ runAs: inline
 
 **注意 `cycle-install` 的自更新**：你正在运行这个 skill，写入的新版本会在下次调用时生效。这没问题——写入后告知用户"cycle-install 已自更新，下次调用生效"。
 
-## 步骤 3：检查 reasonix.toml
+## 步骤 3：检查 reasonix.toml 并修复
 
-检查当前项目是否有 `reasonix.toml` 且包含 `[[plugins]]` 段中注册了 `cycle-bridge`。如果没有，告知用户添加。
+检查当前项目的 `reasonix.toml` 配置。**不要只是口头告知——能修复的直接修复。**
+
+### 3a：`reasonix.toml` 不存在
+
+如果项目根目录没有 `reasonix.toml`，直接调用 `write_file` 创建一个：
+
+```toml
+default_model = "deepseek-flash"
+language      = "zh"
+
+[[providers]]
+name        = "deepseek-flash"
+kind        = "openai"
+base_url    = "https://api.deepseek.com"
+model       = "deepseek-v4-flash"
+api_key_env = "DEEPSEEK_API_KEY"
+
+[[plugins]]
+name    = "cycle-bridge"
+command = "bin/cycle-bridge.exe"
+```
+
+创建后告知用户：`✅ 已创建 reasonix.toml（含 cycle-bridge 插件配置）`
+
+### 3b：`reasonix.toml` 存在但缺少 `[[plugins]]` 段
+
+如果文件存在但没有 `[[plugins]]` 段，用 `read_file` 读出内容，在末尾追加：
+
+```toml
+[[plugins]]
+name    = "cycle-bridge"
+command = "bin/cycle-bridge.exe"
+```
+
+然后用 `write_file` 写回。
+
+### 3c：`reasonix.toml` 存在且有 `[[plugins]]` 但没有 `cycle-bridge`
+
+在 `[[plugins]]` 段末尾添加一个 cycle-bridge 条目：
+
+```toml
+name    = "cycle-bridge"
+command = "bin/cycle-bridge.exe"
+```
+
+### 3d：已有 cycle-bridge 配置
+
+✅ 跳过，无需修改。
+
+### 3e：检查 `bin/cycle-bridge.exe`
+
+无论上述哪种情况，最后检查项目目录下是否存在 `bin/cycle-bridge.exe`。如果不存在，告知用户需要从 bobanana4.0 的 `bin/` 目录复制一份。
 
 ## 完成提示
 
