@@ -46,7 +46,8 @@ if exist "%SOURCE_DIR%settings.json" (
     findstr /C:"auto-add-cycle-bridge" "%USER_DIR%\settings.json" >nul
     if errorlevel 1 (
       echo   WARN: settings.json exists but missing auto-add hook.
-      echo   Manually add SessionStart entry with auto-add-cycle-bridge.ps1
+      echo   Add to settings.json:
+      echo     { "hooks": { "SessionStart": [{ "command": "cmd.exe /c powershell.exe -ExecutionPolicy Bypass -File \"%%USERPROFILE%%\\.reasonix\\bin\\auto-add-cycle-bridge.ps1\"", "description": "Auto-add cycle-bridge" }] } }
     ) else (
       echo   OK: auto-add hook found in settings.json
     )
@@ -99,4 +100,5 @@ echo === Usage: reasonix chat -^> /pipeline your goal ===
 echo === To update: git pull + install.bat ===
 echo.
 pause
+
 
