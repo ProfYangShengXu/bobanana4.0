@@ -9,6 +9,70 @@
 
 ## 📥 安装
 
+### 🧑 新手安装（5 分钟上手）
+
+> 适用于：没有编程经验、不熟悉命令行的用户。
+> 提供了两种方式：**自动下载**（推荐，不用装 Git）或 **Git 克隆**。
+
+#### 第 1 步：下载项目
+
+**方式 A——直接下载 ZIP（推荐，不用装 Git）：**
+
+1. 打开浏览器访问 https://github.com/ProfYangShengXu/bobanana4.0
+2. 点绿色的 **"Code"** 按钮，选 **"Download ZIP"**
+3. 解压到 `C:\Users\你的用户名\bobanana4.0`（右键压缩包 → 解压到当前文件夹，然后把文件夹名改成 `bobanana4.0`）
+4. 进入 `C:\Users\你的用户名\bobanana4.0`，**双击 `install.bat`**（看到黑色窗口弹出就对了）
+
+> 如果双击后一闪而过没反应，右键 `install.bat` → **"以管理员身份运行"**。
+
+**方式 B——Git 克隆（需要装 Git）：**
+
+打开文件夹 `C:\Users\你的用户名`，在地址栏输入 `cmd` 回车，在弹出的黑窗口中粘贴：
+
+```powershell
+git clone https://github.com/ProfYangShengXu/bobanana4.0.git
+```
+
+> 如果提示"git 不是内部或外部命令"，先百度搜索"Git 下载安装"，装完重启黑窗口。
+
+#### 第 2 步：找到你的项目文件夹
+
+假设你的项目在 `D:\我的项目`，在黑窗口中输入：
+
+```powershell
+cd /d D:\我的项目
+```
+
+#### 第 3 步：一键安装
+
+```powershell
+C:\Users\你的用户名\bobanana4.0\install.bat
+```
+
+看到 `=== Done ===` 就装好了。
+
+#### 第 4 步：启动 Reasonix
+
+```powershell
+reasonix chat
+```
+
+如果提示"reasonix 不是命令"，把 `C:\Users\你的用户名\bobanana4.0\bin` 加到系统环境变量 Path 中（百度"Windows 添加环境变量"）。
+
+#### 第 5 步：开始使用
+
+在 Reasonix 聊天框输入：
+
+```
+/pipeline 帮我用 React 写一个 Todo 应用
+```
+
+开始你的第一个全自动开发管线 🎉
+
+---
+
+### 👨‍💻 开发者安装
+
 ```powershell
 # 1. 下载
 git clone https://github.com/ProfYangShengXu/bobanana4.0.git
@@ -16,7 +80,7 @@ git clone https://github.com/ProfYangShengXu/bobanana4.0.git
 # 2. 进入你的项目目录
 cd 你的项目
 
-# 3. 一键安装（装到全局 ~/.reasonix/）
+# 3. 一键安装
 ..\bobanana4.0\install.bat
 ```
 
