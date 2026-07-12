@@ -1,7 +1,9 @@
 ---
 name: cycle
-description: 🔄 多 subagent 并行循环（跨 session）：每批 task 并行执行，每 session 一批，queue_next_prompt 续跑。
+description: 🔄 [Delivery/Balanced] 多 subagent 并行循环（跨 session）：每批 task 并行执行，每 session 一批，queue_next_prompt 续跑。
 runAs: inline
+profiles: delivery, balanced
+cost: high
 ---
 
 # cycle — 多 subagent 并行循环（跨 session）

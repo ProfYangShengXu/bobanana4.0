@@ -1,7 +1,9 @@
 ---
 name: pipeline
-description: 🏭 多角色管线：架构→开发→测试→评判→挑刺大王。每 session 一个角色、一层测试。Go 端控制角色转换。
+description: 🏭 [Delivery/Balanced] 多角色管线：架构→开发→测试→评判→挑刺大王。每 session 一个角色、一层测试。Go 端控制角色转换。
 runAs: inline
+profiles: delivery, balanced
+cost: high
 ---
 
 # pipeline — 多角色分工管线
@@ -17,9 +19,34 @@ runAs: inline
 4. phase 必须在转换表中           → cycle.go 校验
 5. 不准自己决定下一个角色          → cycle.go 根据 flags 映射
 6. 不准声称跑了命令但没贴退出码    → 铁律 3 禁止 "应该没问题"
+7. **角色完成 = 立即 queue_next_prompt**，不准输出"是否继续"、"请确认"、"下一步"等任何征求用户同意的文字，不准在调用 queue_next_prompt 前输出完成框
 ```
 
 违反 RED LINE → 本轮输出被拒绝，agent 必须重发 queue_next_prompt。
+
+## 📋 Prompt 模板（所有角色通用）
+
+每个角色完成时调 `queue_next_prompt` 的 `prompt` 参数必须严格按照以下模板填空，不准改结构、不准丢段：
+
+```
+[GOAL] <原始目标，一字不改>
+[PHASE] <当前阶段名>
+[ROLE] <当前角色名>
+[DONE] <完成了什么，3-5 条 bullet，必须包含 Artifacts: 路径列表>
+       Artifacts: path1, path2, ...
+[STATE] <任务进度/测试覆盖/badcase——至少包含以下之一>
+        task_list: <≥2 项，如 M1✅ M2⏳ M3⬜>
+        test_coverage: <百分比，如 "U:18/18(100%) I:10/10(100%) S:3/5(60%)">
+        badcase: <数量及简要描述>
+[NEXT] <下一阶段的具体执行指令，≥50 字符，具体到让 agent 知道从哪开始>
+```
+
+**质量门**（cycle-bridge 强制，不通过则拒绝）：
+- prompt ≥ 200 字符
+- [STATE] 必须有 task_list / test_coverage / badcase 之一
+- task_list 必须含 ≥2 项任务（不准只写"若干任务"）
+- test_coverage 必须有百分比数字（不准只写"已测"）
+- [NEXT] ≥ 50 字符
 
 ## 轮次与角色标识
 
@@ -97,9 +124,11 @@ FREE ZONE 内的任何决定都不需要理由，不需要征求同意。
 
 检查 docs/product/ 下是否有 *.html 或 *.md 文件。
 如果有 → read_file 读取，提取产品目标、用户画像、MVP 范围。
-如果没有 → 告知用户"先用 /docs 产出产品设计"，中止。
+如果没有 → 基于当前目标（来自 [GOAL]）自行推断产品定位、用户画像、MVP，直接进入第 1 步。
+- 先输出一句"注意：未找到产品 PRD，基于目标描述推断产品定义"
+- 然后直接进入技术 PRD 设计，不再阻塞
 
-**产品 PRD 不是可选项。** 没有产品定义就做技术设计，等于不知道给谁造房子。
+**产品 PRD 优先，但不是硬依赖。** 有则用，无则基于目标推断。
 
 #### 第 1 步：输出结构化技术 PRD
 
@@ -172,18 +201,23 @@ prd:
 
 **不做**：写代码 · 改已有代码 · 跑测试
 
-**完成时输出**：
-粘贴以下 block 到回复末尾（替换 N 为实际模块数）：
+#### 🚨 角色完成强制动作（RED LINE #7）
 
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt`：
+- `phase`: `"arch-done"`
+- `goal`: 原始目标（一字不改）
+- `prompt`: 按上方「📋 Prompt 模板」填空，[DONE] 列出架构设计文档路径，[STATE] 用 task_list 列出模块清单（≥2 项），[NEXT] 指明开发阶段需要实现的任务
+
+**步骤 2** → 输出完成框：
 ```
 ════════════════════════════════════
 🏗️ 架构师完成 · 拆为 N 个模块
 产出来 docs/prd/v1/
-▶ 继续: reasonix cycle --resume
+▶ 终端: reasonix cycle --resume
 ════════════════════════════════════
 ```
-
-**transition**：phase=arch-done → 由 orchestror 转开发
 
 #### 1. 模块划分（高内聚低耦合）
 
@@ -240,8 +274,6 @@ prd:
 
 **不做**：写代码 · 改已有代码 · 跑测试
 
-**transition**：phase=arch-done → 由 orchestror 转开发
-
 ### 🔧 开发
 
 #### 核心原则：每个字符都有依据
@@ -272,16 +304,23 @@ prd:
 
 **不做**：改架构设计 · 改测试用例 · 重构非相关代码
 
-**完成时输出**：
+#### 🚨 角色完成强制动作（RED LINE #7）
 
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt`：
+- 若还有任务未完成：`phase: "dev-done_task-remain"`
+- 若全部任务完成：`phase: "dev-done_task-done"`
+- `goal`: 原始目标（一字不改）
+- `prompt`: 按上方「📋 Prompt 模板」填空，[STATE] 用 task_list 列出剩余任务
+
+**步骤 2** → 输出完成框：
 ```
 ════════════════════════════════════
 🔧 开发完成 · task-done / task-remain
-▶ 继续: reasonix cycle --resume
+▶ 终端: reasonix cycle --resume
 ════════════════════════════════════
 ```
-
-**transition Flag**：task-remain(还有 task 未完成) / task-done(全部完成)
 
 ### 🧪 测试
 
@@ -299,16 +338,23 @@ prd:
 
 **不做**：判分 · 改功能代码 · 改架构
 
-**完成时输出**：
+#### 🚨 角色完成强制动作（RED LINE #7）
 
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt`：
+- 若还有层未测：`phase: "test-done_layer-not-done"`
+- 若全部层已测：`phase: "test-done_layer-all-done"`
+- `goal`: 原始目标（一字不改）
+- `prompt`: 按上方「📋 Prompt 模板」填空，[STATE] 用 test_coverage 列出每层测试率（必须含百分比）
+
+**步骤 2** → 输出完成框：
 ```
 ════════════════════════════════════
 🧪 测试完成 · layer: U/I/S/A · done / more
-▶ 继续: reasonix cycle --resume
+▶ 终端: reasonix cycle --resume
 ════════════════════════════════════
 ```
-
-**transition Flag**：layer-not-done(还有层) / layer-all-done(全完成)
 
 ### 📋 评判
 
@@ -331,22 +377,29 @@ read_file docs/prd/v1/prd.yaml
 4. 退出码 = 0 → LLM Judge 读 trace 打分
 5. 输出：[M1-A1] login 正确 → PASS (92/100)
 
-**完成时输出**：
-
-```
-════════════════════════════════════
-📋 评判完成 · has-badcase / no-badcase
-▶ 继续: reasonix cycle --resume
-════════════════════════════════════
-```
-
 **不做**：写代码 · 改测试 · 读源码
 
 #### badcase 记录
 
 验收不通过项（FAIL 或 score < 80）必须记录。
 
-**transition Flag**：has-badcase(至少一个 FAIL) / no-badcase(全部 PASS)
+#### 🚨 角色完成强制动作（RED LINE #7）
+
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt`：
+- 若有 badcase：`phase: "judge-done_has-badcase"`
+- 若无 badcase：`phase: "judge-done_no-badcase"`
+- `goal`: 原始目标（一字不改）
+- `prompt`: 按上方「📋 Prompt 模板」填空，[STATE] 用 badcase 列出数量及描述
+
+**步骤 2** → 输出完成框：
+```
+════════════════════════════════════
+📋 评判完成 · has-badcase / no-badcase
+▶ 终端: reasonix cycle --resume
+════════════════════════════════════
+```
 
 ### 👿 挑刺大王
 
@@ -366,25 +419,25 @@ read_file docs/prd/v1/prd.yaml
 | 10 | 无重复造轮子 | ✅ | ❌ |
 | 11 | 前端渲染一致(有截图时) | ✅ | ❌ |
 
-**完成时输出**（pass）：
-```
-════════════════════════════════════
-👿 挑刺大王: 11/11 pass ✅
-✅ 管线完成! signal_done
-════════════════════════════════════
-```
-
-**完成时输出**（fail）：
-```
-════════════════════════════════════
-👿 挑刺大王: N/11 fail ❌
-▶ 修复后继续: reasonix cycle --resume
-════════════════════════════════════
-```
+**Delivery 附加**（仅 Delivery profile 生效）：若本次 pipeline 涉及密码/key 管理、跨模块接口变更或核心业务逻辑变更，在步骤 1 之前先调一次 `review` 或 `security_review`，确保 `review_report` 证据完备。
 
 **不做**：写代码 · 改测试
 
-**transition**：全部 pass → signal_done ✅ · 任意 fail → 转开发修复
+#### 🚨 角色完成强制动作（RED LINE #7）
+
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt` 或 `mcp__cycle-bridge__signal_done`：
+- 若全部 pass：调用 `signal_done(summary="✅ 完成! 实现了 N 个模块, M 层测试, LLM Judge 评分 X/100, checklist N/11 pass")`，summary 必须包含模块数、测试层、评分、checklist 结果
+- 若有 fail：调用 `queue_next_prompt(phase="critic-done_fail", goal="...", prompt="...")`，prompt 按上方「📋 Prompt 模板」填空，[NEXT] 指明需要修复的问题清单
+
+**步骤 2** → 输出完成框：
+```
+════════════════════════════════════
+👿 挑刺大王: N/11 pass ✅
+▶ 终端: reasonix cycle --resume
+════════════════════════════════════
+```
 
 ---
 
@@ -407,7 +460,61 @@ critic-done + pass                signal_done(结束)
 explore-done                      原角色(返回探索前的角色)
 ```
 
-agent 每轮结束时调 queue_next_prompt，orchestrator 读这些 flag 决定下一个角色。
+**agent 必须把 flag 编码进 phase 参数**。例如评判发现 badcase 时调用 `queue_next_prompt(phase="judge-done_has-badcase", ...)`，orchestrator 通过精确匹配 `roleTransitions["judge-done_has-badcase"]` 决定下一角色为开发修复。仅传 base phase（如 `phase="judge-done"`）则 orchestrator 无法区分正反路径（no-badcase vs has-badcase）。
+
+### 强制自动过渡表（RED LINE #7 速查）
+
+| 当前角色 | 完成动作 | 下一个角色 |
+|---------|---------|-----------|
+| 🏗️ 架构师 | `queue_next_prompt(phase="arch-done", ...)` | 🔧 开发 |
+| 🔧 开发（有任务） | `queue_next_prompt(phase="dev-done_task-remain", ...)` | 🔧 开发继续 |
+| 🔧 开发（无任务） | `queue_next_prompt(phase="dev-done_task-done", ...)` | 🧪 测试(U) |
+| 🧪 测试（还有层） | `queue_next_prompt(phase="test-done_layer-not-done", ...)` | 🧪 测试下一层 |
+| 🧪 测试（全覆盖） | `queue_next_prompt(phase="test-done_layer-all-done", ...)` | 📋 评判 |
+| 📋 评判（有 badcase） | `queue_next_prompt(phase="judge-done_has-badcase", ...)` | 🔧 开发修复 |
+| 📋 评判（无 badcase） | `queue_next_prompt(phase="judge-done_no-badcase", ...)` | 👿 挑刺大王 |
+| 👿 挑刺（fail） | `queue_next_prompt(phase="critic-done_fail", ...)` | 🔧 开发修复 |
+| 👿 挑刺（pass） | `signal_done(summary=...)` | ✅ 完成 |
+
+**违反后果**：每轮结束后未调用 queue_next_prompt 或 signal_done 就停止 → 本轮失败，agent 必须补调。用户不应看到"是否继续"。
+
+---
+
+## 📦 Delivery Profile 合规（仅 Delivery 模式启用）
+
+当 Reasonix 运行在 **Delivery** profile 下时，宿主强附加以下合约。Balanced/Economy 模式无视此节。
+
+### 1. 验收清单前置
+
+每次变更类工具调用前，宿主检查是否已通过 `todo_write` 建立验收清单。每个角色开始时必须创建 `todo_write` 任务看板。
+
+### 2. 变更后复查
+
+每次变更后必须立即运行聚焦验证命令，用 `complete_step` 引用该命令签收。不准纯文本宣称"已通过"，必须贴退出码和输出。
+
+### 3. 中高风险变更 → 结构化 review
+
+以下情况必须在当前角色结束前调用一次 `review` 或 `security_review`：
+
+| 场景 | 调用 |
+|------|------|
+| 修改了认证/授权代码 | `security_review(task="focus on auth changes")` |
+| 修改了文件 I/O、网络请求、外部命令 | `security_review(task="focus on injection and path traversal")` |
+| 修改了跨模块接口 | `review(task="check interface compatibility across modules")` |
+| 修改了核心业务逻辑 | `review(task="verify correctness of core logic changes")` |
+
+### 4. 证据链完整性
+
+每个 `complete_step` 的 `evidence` 必须包含至少一条 `kind: verification`（有实际 command）或 `kind: diff`，不准用纯 manual 证据替代验收。
+
+### 5. 不准空壳声明
+
+| 模式 | 要求 |
+|------|------|
+| "已实现" 但无代码变更 | 必须有 write_file/edit_file 的 evidence |
+| "已测试通过" 但无退出码 | 必须有 bash 命令 + 退出码 0 |
+| "已复查" 但无 review 调用 | review/security_review 必须有 `review_report` 产出 |
+| task_list 空壳 | task_list 必须 ≥2 项且有 ✅⏳⬜ 状态标记 |
 
 ---
 

@@ -1,7 +1,9 @@
 ---
 name: install
-description: 🍌 安装/更新 banana4.0 全部功能到当前项目（docs + cycle + loop + Bobanana.md）。
+description: 🍌 [All] 安装/更新 banana4.0 全部功能到当前项目（docs + cycle + loop + Bobanana.md）。
 runAs: inline
+profiles: economy, balanced, delivery
+cost: low
 ---
 
 # install — 安装/更新 banana4.0

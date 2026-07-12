@@ -1,7 +1,9 @@
 ---
 name: loop
-description: 🔧 轻量管线：开发(兼架构) + 测试 双角色，遵循 PRD 体系，比 pipeline 少评判/挑刺环节。
+description: 🔧 [Delivery/Balanced] 轻量管线：开发(兼架构) + 测试 双角色，遵循 PRD 体系，比 pipeline 少评判/挑刺环节。
 runAs: inline
+profiles: delivery, balanced
+cost: medium
 ---
 
 # loop — 轻量开发管线
@@ -9,6 +11,17 @@ runAs: inline
 **语言指令：推理用英文，回复用中文。**
 
 **定位：小功能、修 bug、临时改动。比 pipeline 角色少，但 PRD 体系不降级。**
+
+---
+
+## RED LINE（不可触碰）
+
+```
+1. GOAL 不改一字
+2. queue_next_prompt 必须 ≥200 字符
+3. [STATE] 必须含进展数据
+4. **角色完成 = 立即 queue_next_prompt**，不准输出"是否继续"、"请确认"等征求同意的文字，不准在调用 queue_next_prompt 前输出完成框
+```
 
 ---
 
@@ -64,7 +77,23 @@ loop-test-done_layer-all-done            ✅ 完成
 
 **不做**：写测试 · 重构非相关代码
 
-**transition Flag**：`loop-dev-done_task-remain` / `loop-dev-done_task-done`
+#### 🚨 角色完成强制动作（RED LINE #4）
+
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt`：
+- 若还有任务：`phase: "loop-dev-done_task-remain"`
+- 若全部完成：`phase: "loop-dev-done_task-done"`
+- `goal`: 原始目标（一字不改）
+- `prompt`: 包含 `[GOAL]` `[PHASE]` `[DONE]` `[STATE]` `[NEXT]` 的完整提示词
+
+**步骤 2** → 输出完成框：
+```
+════════════════════════════════════
+🔧 开发完成 · task-done / task-remain
+▶ 终端: reasonix cycle --resume
+════════════════════════════════════
+```
 
 ### 🧪 测试
 
@@ -80,7 +109,23 @@ loop-test-done_layer-all-done            ✅ 完成
 
 **不做**：改功能代码 · 跳层
 
-**transition Flag**：`loop-test-done_layer-not-done` / `loop-test-done_layer-all-done`
+#### 🚨 角色完成强制动作（RED LINE #4）
+
+完成角色工作后**立即执行**以下两步，中间不准有任何输出、不准停顿、不准征求用户同意：
+
+**步骤 1** → 调用 `mcp__cycle-bridge__queue_next_prompt`：
+- 若还有层未测：`phase: "loop-test-done_layer-not-done"`
+- 若全部层已测：`phase: "loop-test-done_layer-all-done"`
+- `goal`: 原始目标（一字不改）
+- `prompt`: 包含 `[GOAL]` `[PHASE]` `[DONE]` `[STATE]` `[NEXT]` 的完整提示词
+
+**步骤 2** → 输出完成框：
+```
+════════════════════════════════════
+🧪 测试完成 · layer-all-done / layer-not-done
+▶ 终端: reasonix cycle --resume
+════════════════════════════════════
+```
 
 ---
 
