@@ -34,8 +34,26 @@ echo [4/5] Global binaries ...
 if not exist "%USER_DIR%\bin" mkdir "%USER_DIR%\bin" >nul
 if exist "%SOURCE_DIR%bin\cycle-bridge.exe" copy /Y "%SOURCE_DIR%bin\cycle-bridge.exe" "%USER_DIR%\bin\cycle-bridge.exe" >nul
 if exist "%USER_DIR%\bin\cycle-bridge.exe" echo   + ~/.reasonix/bin/cycle-bridge.exe
+if exist "%SOURCE_DIR%bin\auto-add-cycle-bridge.ps1" copy /Y "%SOURCE_DIR%bin\auto-add-cycle-bridge.ps1" "%USER_DIR%\bin\auto-add-cycle-bridge.ps1" >nul
+if exist "%USER_DIR%\bin\auto-add-cycle-bridge.ps1" echo   + ~/.reasonix/bin/auto-add-cycle-bridge.ps1
 
-echo [5/5] Project level ...
+echo [5/5] Auto-add hook ...
+if exist "%SOURCE_DIR%settings.json" (
+  if not exist "%USER_DIR%\settings.json" (
+    copy /Y "%SOURCE_DIR%settings.json" "%USER_DIR%\settings.json" >nul
+    if exist "%USER_DIR%\settings.json" echo   + ~/.reasonix/settings.json (SessionStart hook)
+  ) else (
+    findstr /C:"auto-add-cycle-bridge" "%USER_DIR%\settings.json" >nul
+    if errorlevel 1 (
+      echo   WARN: settings.json exists but missing auto-add hook.
+      echo   Manually add SessionStart entry with auto-add-cycle-bridge.ps1
+    ) else (
+      echo   OK: auto-add hook found in settings.json
+    )
+  )
+)
+
+echo [6/6] Project level ...
 if not exist ".reasonix" mkdir ".reasonix"
 for %%s in (pipeline docs cycle loop install) do (
   if exist "%SOURCE_DIR%skills\%%s\SKILL.md" (
@@ -70,8 +88,6 @@ if errorlevel 1 (
   echo name = "cycle-bridge" >> reasonix.toml
   echo command = '%PLUGIN_PATH%' >> reasonix.toml
   echo   + cycle-bridge plugin added
-  echo.
-  echo   Restart Reasonix to apply changes.
 ) else (
   echo   OK: cycle-bridge plugin found
 )
@@ -83,3 +99,4 @@ echo === Usage: reasonix chat -^> /pipeline your goal ===
 echo === To update: git pull + install.bat ===
 echo.
 pause
+
