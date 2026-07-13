@@ -2,7 +2,7 @@
   "hooks": {
     "SessionStart": [
       {
-        "command": "cmd.exe /c powershell.exe -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.reasonix\\bin\\auto-add-cycle-bridge.ps1\"",
+        "command": "cmd.exe /c powershell.exe -ExecutionPolicy Bypass -File %USERPROFILE%\\.reasonix\\bin\\auto-add-cycle-bridge.ps1",
         "description": "Auto-add cycle-bridge to new projects"
       }
     ]
